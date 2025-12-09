@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>랜덤 룰렛</title>
+<style>
+  body {
+    font-family: Arial;
+    text-align: center;
+    margin-top: 40px;
+  }
+  #wheelCanvas {
+    width: 360px;
+    height: 360px;
+    transition: transform 4s cubic-bezier(.15,.9,.05,1);
+  }
+  #arrow {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 35px solid red;
+    margin: 0 auto -10px auto;
+  }
+  #result {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h2>🎯 랜덤 룰렛</h2>
+
+<div id="arrow"></div>
+<canvas id="wheelCanvas" width="360" height="360"></canvas>
+<br>
+<button id="spinBtn">룰렛 돌리기</button>
+<div id="result"></div>
+
+<script>
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
+const resultBox = document.getElementById("result");
+const spinBtn = document.getElementById("spinBtn");
+
+// 8개 사이트
+const slices = [
+  { label: '구글', url: 'https://www.google.com/?hl=ko' },
+  { label: '네이버', url: 'https://www.naver.com/' },
+  { label: '싹스리', url: 'https://namu.wiki/w/%EC%8B%B9%EC%93%B0%EB%A6%AC' },
+  { label: '챗', url: 'https://chatgpt.com/' },
+  { label: '세명컴고', url: 'https://namu.wiki/w/%EC%84%B8%EB%AA%85%EC%BB%B4%ED%93%A8%ED%84%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90' },
+  { label: '컴시간알리미', url: 'http://www.xn--s39aj90b0nb2xw6xh.kr/' },
+  { label: '로켓', url: 'https://www.rocketpunch.com/' },
+  { label: '수학', url: 'https://namu.wiki/w/%EC%88%98%ED%95%99' }
+];
+
+const totalSlices = slices.length;
+const anglePer = 360 / totalSlices;
+
+// 🎨 룰렛 그리기 (highlight는 당첨 칸 index)
+function drawWheel(highlight = -1) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  slices.forEach((s, i) => {
+    const start = (Math.PI * 2 * i) / totalSlices;
+    const end = start + (Math.PI * 2 / totalSlices);
+
+    ctx.beginPath();
+    ctx.moveTo(180, 180);
+    ctx.arc(180, 180, 180, start, end);
+
+    // 당첨 칸은 빨간색
+    if (i === highlight) {
+      ctx.fillStyle = "#ff3b3b";
+    } else {
+      ctx.fillStyle = i % 2 === 0 ? "#8ad0ff" : "#ffd28a";
+    }
+
+    ctx.fill();
+
+    // 텍스트
+    ctx.save();
+    ctx.translate(180, 180);
+    ctx.rotate(start + (end - start) / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 15px Arial";
+    ctx.fillText(s.label, 160, 5);
+    ctx.restore();
+  });
+}
+
+drawWheel();
+
+// 🎲 클릭하면 회전
+spinBtn.onclick = () => {
+  resultBox.textContent = "";
+
+  const spins = 5 + Math.random() * 5;   // 5~10바퀴
+  const randomAngle = Math.random() * 360;
+  const totalAngle = spins * 360 + randomAngle;
+
+  canvas.style.transition = "transform 4s cubic-bezier(.15,.9,.05,1)";
+  canvas.style.transform = `rotate(${totalAngle}deg)`;
+
+  canvas.addEventListener("transitionend", function te() {
+    canvas.removeEventListener("transitionend", te);
+
+    // 🎯 12시 화살표 기준 당첨 index 계산
+    let landedIndex = totalSlices - Math.floor((totalAngle % 360) / anglePer);
+    landedIndex %= totalSlices;
+
+    const chosen = slices[landedIndex];
+
+    // 당첨 칸 빨간색 표시
+    canvas.style.transition = "none";
+    canvas.style.transform = `rotate(${(totalAngle % 360)}deg)`;
+    drawWheel(landedIndex);
+
+    resultBox.textContent = `✔ 당첨: ${chosen.label}`;
+
+    // 3초 뒤 사이트 이동
+    setTimeout(() => {
+      window.location.href = chosen.url;
+    }, 3000);
+  });
+};
+</script>
+
+</body>
+</html>
